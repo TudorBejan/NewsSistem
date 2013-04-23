@@ -1,0 +1,112 @@
+package ro.upt.pcbe;
+
+/*
+ * Copyright 2007 Sun Microsystems, Inc.
+ * All rights reserved.  You may not modify, use,
+ * reproduce, or distribute this software except in
+ * compliance with  the terms of the License at:
+ * http://developer.sun.com/berkeley_license.html
+ */
+
+
+import java.util.LinkedList;
+import java.util.List;
+import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
+import javax.jms.Topic;
+import javax.jms.Connection;
+import javax.jms.Session;
+import javax.jms.MessageProducer;
+import javax.jms.TextMessage;
+import javax.jms.JMSException;
+import javax.annotation.Resource;
+import javax.jms.MessageConsumer;
+
+
+/**
+ * The Editor class consists only of a main method,
+ * which sends several messages to a queue or topic.
+ *
+ * Run this program in conjunction with SynchConsumer or
+ * AsynchConsumer. Specify "queue" or "topic" on the
+ * command line when you run the program.  By default, the
+ * program sends one message.  Specify a number after the
+ * destination name to send that number of messages.
+ */
+public class Editor {
+    
+    Connection connection;
+    Session session;
+    private String name;
+    private List<News> entries; 
+	
+    public String getName(){
+		return this.name;
+    }
+
+    public Editor(String name, Connection connection){
+		this.name = name;
+		entries = new LinkedList<News>();
+                this.connection = connection;
+		//cred ca trebuie sa il abonam la evenimentul : stire de a mea a fost citita (nu stiu cum se face inca ..)
+    }
+    
+    public void addEntry (News news)
+    {
+        entries.add(news);
+    }
+    
+    public void publish(String title,Topic topic,String source, 
+            String content) throws JMSException { // subject = topic (topic deja folosit)
+        
+        News news = new News(this,title,topic,source,content);
+        this.entries.add(news);
+        
+        
+        final int NUM_MSGS=1;
+
+        session = connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
+
+        MessageProducer producer = session.createProducer(topic);
+        TextMessage message = session.createTextMessage();
+
+            for (int i = 0; i < NUM_MSGS; i++) {
+                //message.setText("This message " + news.getContext());
+               
+                message = EventFactory.publishEvent(Constant.PUBLISH_EVENT_ID, topic.getTopicName(), news, session);
+                System.out.println("Sending message: " + message.getText());
+                producer.send(message);
+                System.out.println("S-a publicat o noua stire");
+            }
+
+            /*
+             * Send a non-text control message indicating end of
+             * messages.
+             */
+            producer.send(session.createMessage());
+        
+    }
+     private String createSelector()
+    {
+        return Constant.EDITOR+" = '"+this.name+"'";
+    }
+    
+    public void subscribeToConfirmation(Topic topic) throws JMSException{
+             MessageConsumer consumer = null;
+             session = connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
+             if (this.name!= null) {
+                consumer = session.createConsumer(topic, this.createSelector());
+             }
+             else {
+                consumer = session.createConsumer(topic);
+             }
+             
+             ReaderListener listener = new ReaderListener(this);
+             consumer.setMessageListener(listener);
+             
+        }
+    
+    }
+     
+    
+

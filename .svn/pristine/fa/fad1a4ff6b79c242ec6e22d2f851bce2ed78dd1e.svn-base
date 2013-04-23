@@ -1,0 +1,42 @@
+package ro.upt.pcbe;
+
+import javax.jms.MessageListener;
+import javax.jms.Message;
+import javax.jms.TextMessage;
+import javax.jms.JMSException;
+import javax.jms.Topic;
+
+public class NewsListener implements MessageListener {
+    Reader reader;
+    
+    public void onMessage(Message message) {
+        TextMessage msg = null;
+        String topicName = null;
+        String authorName = null;
+
+        try {
+            if (message instanceof TextMessage) {
+                msg = (TextMessage) message;
+                if (msg.getJMSDestination() instanceof Topic)
+                {
+                   topicName = ((Topic)msg.getJMSDestination()).getTopicName();
+                }
+                authorName = msg.getStringProperty("author");
+                System.out.println(reader.getName() + " is reading an article about " + 
+                        topicName + " written by " + authorName);
+                System.out.println("\t"+msg.getText());
+            } else {
+                System.err.println("Message is not a TextMessage");
+            }
+        } catch (JMSException e) {
+            System.err.println("JMSException in onMessage(): " + e.toString());
+        } catch (Throwable t) {
+            System.err.println("Exception in onMessage():" + t.getMessage());
+        }
+    }
+    
+    public NewsListener (Reader reader)
+    {
+        this.reader = reader;
+    }
+}

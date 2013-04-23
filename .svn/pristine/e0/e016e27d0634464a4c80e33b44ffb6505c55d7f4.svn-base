@@ -1,0 +1,62 @@
+package ro.upt.pcbe;
+
+import javax.jms.MessageListener;
+import javax.jms.Message;
+import javax.jms.TextMessage;
+import javax.jms.JMSException;
+import javax.jms.Topic;
+
+public class NewsListener implements MessageListener {
+    Reader reader;
+    
+    public void onMessage(Message message) {
+        TextMessage msg = null;
+        String topicName = null;
+        String authorName = null;
+        String firstPublication=null;
+        String lastPublication=null;
+        String source=null;
+        String title=null;
+
+        try {
+            if (message instanceof TextMessage) {
+                msg = (TextMessage) message;
+                if (msg.getJMSDestination() instanceof Topic)
+                {
+                   topicName = ((Topic)msg.getJMSDestination()).getTopicName();
+                }
+                
+                authorName = msg.getStringProperty("author");
+                firstPublication=msg.getStringProperty("first_publication");
+                lastPublication=msg.getStringProperty("last_publication");
+                source=msg.getStringProperty("source");
+                title=msg.getStringProperty("title");
+                /*
+                System.out.println(reader.getName() + " is reading an article about " + 
+                        topicName + " written by " + authorName);
+                System.out.println("\t"+msg.getText());
+                */
+                System.out.println("MESSAGE: "+msg.getText());
+                System.out.println("---------------------------------------------------------------------------");
+                System.out.println("Subscriber: "+reader.getName());
+                System.out.println("Publisher: "+authorName);
+                System.out.println("Title: "+title);
+                System.out.println("Source: "+source); 
+                System.out.println("First Publication: "+firstPublication);
+                System.out.println("Last Publication: "+lastPublication);
+
+            } else {
+                System.err.println("Message is not a TextMessage");
+            }
+        } catch (JMSException e) {
+            System.err.println("JMSException in onMessage(): " + e.toString());
+        } catch (Throwable t) {
+            System.err.println("Exception in onMessage():" + t.getMessage());
+        }
+    }
+    
+    public NewsListener (Reader reader)
+    {
+        this.reader = reader;
+    }
+}

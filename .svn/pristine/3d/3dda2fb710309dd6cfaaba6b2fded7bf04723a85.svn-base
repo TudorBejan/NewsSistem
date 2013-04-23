@@ -1,0 +1,59 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package ro.upt.pcbe;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.jms.*;
+
+
+/**
+ *
+ * @author Roxi
+ */
+// creaza evemente de tipul PUBLISH, READ, DELETE
+public class EventFactory {
+    
+    public final static String PUBLISH_EVENT_ID="1";
+    public final static String READ_EVENT_ID="2";
+    public final static String DELETE_EVENT_ID="3";
+    public final static String MODIFY_EVENT_ID="4";
+    public final static String TOPIC="topic"; // key for ConcurrentHashMap properties
+    public final static String EDITOR="author";
+    public final static String PUBLISH = "publish";
+    public final static String UPDATE = "update";
+    public final static String DELETE = "delete";
+    public final static String EVENT_TYPE = "event_type";    
+    public static Event readEvent(String source, String topic, String autor){
+        Event e = new Event(READ_EVENT_ID, source,null);
+        e.addProperty(TOPIC, topic);
+        e.addProperty(EDITOR, autor);
+        
+        return e;
+    }
+    
+     public static TextMessage publishEvent(String source, String topic, News news, 
+             Session session) throws JMSException{
+        //Event e = new Event(PUBLISH_EVENT_ID, source, news);
+        //e.addProperty(TOPIC, topic);
+        TextMessage msg = session.createTextMessage();
+        msg.setText(news.getContext());
+        msg.setStringProperty(TOPIC, topic);
+        msg.setStringProperty(EDITOR, news.getAuthor());
+        msg.setStringProperty(EVENT_TYPE, PUBLISH);
+        return msg;
+    }
+     
+      public static Event deleteEvent(News news){
+        Event e = new Event(DELETE_EVENT_ID, news.getAuthor(),news);
+        try {
+            e.addProperty(TOPIC, news.getTopic().getTopicName());
+        } catch (JMSException ex) {
+            Logger.getLogger(EventFactory.class.getName()).log(Level.SEVERE, null, ex);
+        }
+              
+        return null;
+    }
+}
